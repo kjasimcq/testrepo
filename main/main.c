@@ -106,22 +106,13 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
     switch ((esp_mqtt_event_id_t)event_id) {
     case MQTT_EVENT_CONNECTED:
         ESP_LOGI(TAG, "MQTT_EVENT_CONNECTED");
-        msg_id = esp_mqtt_client_subscribe(client, "/topic/qos0", 0);
-        ESP_LOGI(TAG, "sent subscribe successful, msg_id=%d", msg_id);
-
-        msg_id = esp_mqtt_client_subscribe(client, "/topic/qos1", 1);
-        ESP_LOGI(TAG, "sent subscribe successful, msg_id=%d", msg_id);
-
-        msg_id = esp_mqtt_client_unsubscribe(client, "/topic/qos1");
-        ESP_LOGI(TAG, "sent unsubscribe successful, msg_id=%d", msg_id);
+        // TODO SUbscribe to something as an example
         break;
     case MQTT_EVENT_DISCONNECTED:
         ESP_LOGI(TAG, "MQTT_EVENT_DISCONNECTED");
         break;
     case MQTT_EVENT_SUBSCRIBED:
         ESP_LOGI(TAG, "MQTT_EVENT_SUBSCRIBED, msg_id=%d", event->msg_id);
-        msg_id = esp_mqtt_client_publish(client, "/topic/qos0", "data", 0, 0, 0);
-        ESP_LOGI(TAG, "sent publish successful, msg_id=%d", msg_id);
         break;
     case MQTT_EVENT_UNSUBSCRIBED:
         ESP_LOGI(TAG, "MQTT_EVENT_UNSUBSCRIBED, msg_id=%d", event->msg_id);
@@ -133,6 +124,9 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
         ESP_LOGI(TAG, "MQTT_EVENT_DATA");
         printf("TOPIC=%.*s\r\n", event->topic_len, event->topic);
         printf("DATA=%.*s\r\n", event->data_len, event->data);
+        break;
+    case MQTT_EVENT_BEFORE_CONNECT:
+        ESP_LOGI(TAG, "MQTT_EVENT_BEFORE_CONNECT");
         break;
     case MQTT_EVENT_ERROR:
         ESP_LOGI(TAG, "MQTT_EVENT_ERROR");
@@ -160,13 +154,6 @@ void getMqttTopic(quarklink_context_t *quarklink, char *topic) {
         ESP_LOGI(TAG, "Broker is AWS");
         sprintf(topic, "aws/topic/%s/", quarklink->deviceID);
     }
-
-    // If Broker is Azure
-    else if (strstr(quarklink->iotHubEndpoint, "azure") != 0) {
-        ESP_LOGI(TAG, "Broker is Azure");
-        sprintf(topic, "devices/%s/messages/events/", quarklink->deviceID);
-    }
-
     // If Broker is QuarkLink MQTT
     else {
         ESP_LOGI(TAG, "Broker is QuarkLink MQTT");
@@ -186,13 +173,6 @@ int mqtt_init(quarklink_context_t *quarklink, esp_mqtt_client_handle_t *client) 
     static bool is_running = false;
     if (is_running) {
         return 0;
-    }
-
-    static char deviceKey[QUARKLINK_MAX_KEY_LENGTH];
-    quarklink_return_t ret = quarklink_getDeviceKey(quarklink, deviceKey, QUARKLINK_MAX_KEY_LENGTH);
-    if (ret != QUARKLINK_SUCCESS) {
-        ESP_LOGE(TAG, "Failed to get device key (ret %d)", ret);
-        return -1;
     }
 
     const esp_mqtt_client_config_t mqtt_cfg = {
@@ -215,7 +195,6 @@ int mqtt_init(quarklink_context_t *quarklink, esp_mqtt_client_handle_t *client) 
     if (*client == NULL) {
         return -1;
     }
-
     /* The last argument may be used to pass data to the event handler, in this example mqtt_event_handler */
     esp_mqtt_client_register_event(*client, ESP_EVENT_ANY_ID, mqtt_event_handler, NULL);
     if (esp_mqtt_client_start(*client) == ESP_OK) {
@@ -252,12 +231,10 @@ void wifi_init_sta(void) {
                                                         NULL,
                                                         &instance_got_ip));
     wifi_config_t wifi_config;
-
-    // /* Load existing configuration and prompt user */
+    /* Load existing configuration and prompt user */
     esp_wifi_get_config(WIFI_IF_STA, &wifi_config);
 
     ESP_ERROR_CHECK(esp_wifi_start() );
-
     ESP_LOGI(TAG, "wifi_init_sta finished.");
 
     /* Waiting until either the connection is established (WIFI_CONNECTED_BIT) or connection failed for the maximum
@@ -271,10 +248,10 @@ void wifi_init_sta(void) {
     /* xEventGroupWaitBits() returns the bits before the call returned, hence we can test which event actually
      * happened. */
     if (bits & WIFI_CONNECTED_BIT) {
-        ESP_LOGI(TAG, "connected to ap SSID:%s", wifi_config.sta.ssid);
+        ESP_LOGI(TAG, "connected to ap SSID: %s", wifi_config.sta.ssid);
     } 
     else if (bits & WIFI_FAIL_BIT) {
-        ESP_LOGI(TAG, "Failed to connect to SSID:%s", wifi_config.sta.ssid);
+        ESP_LOGI(TAG, "Failed to connect to SSID: %s", wifi_config.sta.ssid);
     } 
     else {
         ESP_LOGE(TAG, "UNEXPECTED EVENT");
@@ -305,11 +282,6 @@ void getting_started_task(void *pvParameter) {
             switch (ql_status) {
                 case QUARKLINK_STATUS_ENROLLED:
                     ESP_LOGI(TAG, "Enrolled");
-                    // if enrollment context was not stored, force a new enrol
-                    if (strcmp(quarklink.iotHubEndpoint, "") == 0) {
-                        ESP_LOGW(TAG, "Enrolled, but no context stored, force a re-enrol");
-                        ql_status = QUARKLINK_STATUS_NOT_ENROLLED;
-                    }
                     break;
                 case QUARKLINK_STATUS_FWUPDATE_REQUIRED:
                     ESP_LOGI(TAG, "Firmware Update required");
@@ -344,6 +316,8 @@ void getting_started_task(void *pvParameter) {
                         if (ql_ret != QUARKLINK_SUCCESS) {
                             ESP_LOGW(TAG, "Failed to store the enrolment context");
                         }
+                        /* Update Status to avoid delaying MQTT Client init */
+                        ql_status = QUARKLINK_STATUS_ENROLLED;
                         break;
                     case QUARKLINK_DEVICE_DOES_NOT_EXIST:
                         ESP_LOGW(TAG, "Device does not exist");
@@ -385,10 +359,9 @@ void getting_started_task(void *pvParameter) {
             
             if (ql_status == QUARKLINK_STATUS_ENROLLED) {
                 /* Start the MQTT task */
-                // Retry initialising the mqtt broker if failed
-                int retries = 10;
-                while (mqtt_init(&quarklink, &mqtt_client) != 0 || retries-- > 0) {
-                    vTaskDelay(1000 / portTICK_PERIOD_MS);
+                if (mqtt_init(&quarklink, &mqtt_client) != 0) {
+                    ESP_LOGE(TAG, "Failed to initialise the MQTT Client");
+                    continue;
                 }
             }
         }
