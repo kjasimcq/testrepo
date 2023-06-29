@@ -31,7 +31,6 @@ static const int STATUS_CHECK_INTERVAL = 20;
 static const int MQTT_PUBLISH_INTERVAL = 5;
 
 /* MQTT config */
-// Topic (aws/topic/<deviceID>)
 #define MAX_TOPIC_LENGTH    (QUARKLINK_MAX_DEVICE_ID_LENGTH + 30)
 
 
@@ -106,7 +105,7 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
     switch ((esp_mqtt_event_id_t)event_id) {
     case MQTT_EVENT_CONNECTED:
         ESP_LOGI(TAG, "MQTT_EVENT_CONNECTED");
-        // TODO SUbscribe to something as an example
+        // TODO Subscribe to something as an example
         break;
     case MQTT_EVENT_DISCONNECTED:
         ESP_LOGI(TAG, "MQTT_EVENT_DISCONNECTED");

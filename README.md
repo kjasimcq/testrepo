@@ -61,3 +61,12 @@ Generated <path/to/>quarklink-getting-started-m5edukit-ecc608/build/quarklink-ge
 You might notice that at the end the utility prompts you to sign the firmware and suggests what command to run to flash the device. This is not possible, since the device has already been provisioned via QuarkLink and can only be updated with firmware that is signed with the same key, securely stored in the QuarkLink HSM.
 
 In order to update your device, you need to upload the generated binary `build/quarklink-getting-started-m5edukit-ecc608.bin` to your QuarkLink instance, where it will be signed and provided to the running device as an over-the-air update.
+
+## Troubleshooting
+At the time of writing, esp-idf 5.1 is in pre-release and there is a minor bug within the *esp_tls_mbedtls* component that prevents the Secure Element from working as intended.  
+Until the fix has been added, there is need to manually update the two following lines of code, in the file *${IDF_PATH}\components\esp-tls\esp_tls_mbedtls.c*:
+```c
+// Line 951, 952
+if(((esp_tls_pki_t *)pki)->publiccert_pem_buf != NULL) {
+    ret = mbedtls_x509_crt_parse(&tls->clientcert, (const unsigned char*)(((esp_tls_pki_t *) pki)->publiccert_pem_buf), ((esp_tls_pki_t *)pki)->publiccert_pem_bytes); 
+```
