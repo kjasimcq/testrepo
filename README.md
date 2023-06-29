@@ -41,6 +41,20 @@ Use ESP-IDF's `idf.py` command to configure the project:
 
 It is important to leave the configuration as it is, especially the parts concerning the Security Features, Partition Table and Bootloader, as changing these will brick the device.
 
+### Select quarklink-client library
+To change the quarklink-client compiled library to use, simply modify the [CMakeLists.txt](./main/CMakeLists.txt) in the main folder and update with the path and name of the file needed.
+E.g.
+```c
+add_prebuilt_library(quarklink_client "../lib/libquarklink-client-esp32-m5edukit-ecc608-v1.2.2.a"
+                    PRIV_REQUIRES nvs_flash esp_http_client esp_https_ota app_update mbedtls esp-cryptoauthlib)
+```
+Becomes
+```c
+add_prebuilt_library(quarklink_client "../lib/libquarklink-client-esp32-m5edukit-ecc608-v1.2.2-debug.a"
+                    PRIV_REQUIRES nvs_flash esp_http_client esp_https_ota app_update mbedtls esp-cryptoauthlib)
+```
+
+
 ## Build
 Run `idf.py build` to build the project. 
 This command will generate the firmware that needs to be uploaded to QuarkLink for the OTA update.
