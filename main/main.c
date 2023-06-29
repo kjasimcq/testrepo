@@ -32,7 +32,7 @@ static const int MQTT_PUBLISH_INTERVAL = 5;
 
 /* MQTT config */
 // Topic (aws/topic/<deviceID>)
-static char mqttTopic[QUARKLINK_MAX_DEVICE_ID_LENGTH + 10] = "aws/topic";
+#define MAX_TOPIC_LENGTH    (QUARKLINK_MAX_DEVICE_ID_LENGTH + 30)
 
 
 static void event_handler(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data) {
@@ -153,7 +153,35 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
     }
 }
 
-int mqtt_init(esp_mqtt_client_handle_t *client) {
+/* Build the topic accordingly to the IoT Hub used */
+void getMqttTopic(quarklink_context_t *quarklink, char *topic) {
+    // If Broker is AWS
+    if (strstr(quarklink->iotHubEndpoint, "amazon") != 0) {
+        ESP_LOGI(TAG, "Broker is AWS");
+        sprintf(topic, "aws/topic/%s/", quarklink->deviceID);
+    }
+
+    // If Broker is Azure
+    else if (strstr(quarklink->iotHubEndpoint, "azure") != 0) {
+        ESP_LOGI(TAG, "Broker is Azure");
+        sprintf(topic, "devices/%s/messages/events/", quarklink->deviceID);
+    }
+
+    // If Broker is QuarkLink MQTT
+    else {
+        ESP_LOGI(TAG, "Broker is QuarkLink MQTT");
+        sprintf(topic, "local/topic/%s/", quarklink->deviceID);
+    }
+}
+
+/**
+ * \brief Initialise the MQTT task using to the QuarkLink details provided. 
+ * 
+ * \param[in]  quarklink The quarklink context
+ * \param[out] client    The handle of the mqtt client created
+ * \return int 0 for success
+ */
+int mqtt_init(quarklink_context_t *quarklink, esp_mqtt_client_handle_t *client) {
     // Aux variable to keep track if mqtt task has already been started
     static bool is_running = false;
     if (is_running) {
@@ -161,7 +189,7 @@ int mqtt_init(esp_mqtt_client_handle_t *client) {
     }
 
     static char deviceKey[QUARKLINK_MAX_KEY_LENGTH];
-    quarklink_return_t ret = quarklink_getDeviceKey(&quarklink, deviceKey, QUARKLINK_MAX_KEY_LENGTH);
+    quarklink_return_t ret = quarklink_getDeviceKey(quarklink, deviceKey, QUARKLINK_MAX_KEY_LENGTH);
     if (ret != QUARKLINK_SUCCESS) {
         ESP_LOGE(TAG, "Failed to get device key (ret %d)", ret);
         return -1;
@@ -169,16 +197,16 @@ int mqtt_init(esp_mqtt_client_handle_t *client) {
 
     const esp_mqtt_client_config_t mqtt_cfg = {
         .broker = {
-            .address.hostname = quarklink.iotHubEndpoint,
-            .address.port = quarklink.iotHubPort,
+            .address.hostname = quarklink->iotHubEndpoint,
+            .address.port = quarklink->iotHubPort,
             .address.transport = MQTT_TRANSPORT_OVER_SSL,
-            .verification.certificate = quarklink.iotHubRootCert
+            .verification.certificate = quarklink->iotHubRootCert
         },
         .credentials ={
-            .client_id = quarklink.deviceID,
+            .client_id = quarklink->deviceID,
             .authentication = {
                 .use_secure_element = true,
-                .certificate= quarklink.deviceCert
+                .certificate= quarklink->deviceCert
             }
         }
     };
@@ -192,7 +220,6 @@ int mqtt_init(esp_mqtt_client_handle_t *client) {
     esp_mqtt_client_register_event(*client, ESP_EVENT_ANY_ID, mqtt_event_handler, NULL);
     if (esp_mqtt_client_start(*client) == ESP_OK) {
         is_running = true;
-        sprintf(mqttTopic, "aws/topic/%s", quarklink.deviceID);
         return 0;
     }
     else {
@@ -224,25 +251,10 @@ void wifi_init_sta(void) {
                                                         &event_handler,
                                                         NULL,
                                                         &instance_got_ip));
-    //wifi_config_t wifi_config;   // PUT IT BACK AFTER REMOVING THE REST OF HARD_CODED CLAUDIA
-    
-    // HARD_CODED CLAUDIA
-    wifi_config_t wifi_config = {
-        .sta = {
-            .ssid = "Donadi hotspot",
-            .password = "samishere2023",
-            /* Setting a password implies station will connect to all security modes including WEP/WPA.
-             * However these modes are deprecated and not advisable to be used. Incase your Access point
-             * doesn't support WPA2, these mode can be enabled by commenting below line */
-	     .threshold.authmode = WIFI_AUTH_WPA2_PSK,
-        },
-    }; //HARD_CODED CLAUDIA
+    wifi_config_t wifi_config;
 
     // /* Load existing configuration and prompt user */
-    //esp_wifi_get_config(WIFI_IF_STA, &wifi_config); // PUT IT BACK AFTER REMOVING THE REST OF HARD_CODED CLAUDIA
-
-    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA) ); //HARD_CODED CLAUDIA
-    ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config) ); //HARD_CODED CLAUDIA
+    esp_wifi_get_config(WIFI_IF_STA, &wifi_config);
 
     ESP_ERROR_CHECK(esp_wifi_start() );
 
@@ -280,6 +292,7 @@ void getting_started_task(void *pvParameter) {
     quarklink_return_t ql_status = QUARKLINK_ERROR;
 
     esp_mqtt_client_handle_t mqtt_client = NULL;
+    char mqtt_topic[MAX_TOPIC_LENGTH] = "";
     uint32_t round = 0;
 
     while (1) {
@@ -318,6 +331,9 @@ void getting_started_task(void *pvParameter) {
             if (ql_status == QUARKLINK_STATUS_NOT_ENROLLED ||
                 ql_status == QUARKLINK_STATUS_CERTIFICATE_EXPIRED ||
                 ql_status == QUARKLINK_STATUS_REVOKED) {
+                /* Reset mqtt */
+                strcpy(mqtt_topic, "");
+                esp_mqtt_client_stop(mqtt_client);
                 /* enroll */
                 ESP_LOGI(TAG, "Enrol to %s", quarklink.endpoint);
                 ql_ret = quarklink_enrol(&quarklink);
@@ -368,9 +384,10 @@ void getting_started_task(void *pvParameter) {
             }
             
             if (ql_status == QUARKLINK_STATUS_ENROLLED) {
+                /* Start the MQTT task */
                 // Retry initialising the mqtt broker if failed
                 int retries = 10;
-                while (mqtt_init(&mqtt_client) != 0 || retries-- > 0) {
+                while (mqtt_init(&quarklink, &mqtt_client) != 0 || retries-- > 0) {
                     vTaskDelay(1000 / portTICK_PERIOD_MS);
                 }
             }
@@ -378,56 +395,51 @@ void getting_started_task(void *pvParameter) {
 
         // If it's time to publish
         if (round % MQTT_PUBLISH_INTERVAL == 0) {
+            if (strcmp(mqtt_topic, "") == 0) {
+                getMqttTopic(&quarklink, mqtt_topic);
+            }
             // len = 0 and data not NULL is valid, length is determined by strlen
-            int msg_id = esp_mqtt_client_publish(mqtt_client, mqttTopic, "data", 0, 0, 0);
+            int msg_id = esp_mqtt_client_publish(mqtt_client, mqtt_topic, "data", 0, 0, 0);
             if (msg_id < 0) {
-                ESP_LOGE(TAG, "Failed to publish to %s (ret %d)", mqttTopic, msg_id);
+                ESP_LOGE(TAG, "Failed to publish to %s (ret %d)", mqtt_topic, msg_id);
             }
             else {
-                ESP_LOGI(TAG, "Published to %s, msg_id=%d", mqttTopic, msg_id);
+                ESP_LOGI(TAG, "Published to %s, msg_id=%d", mqtt_topic, msg_id);
             }
         }
 
         vTaskDelay(1000 / portTICK_PERIOD_MS);
         round++;
     }
-
 }
 
-
-// HARD CODED CLAUDIA
-/* Quarklinik Details. */
-char *CQ_ENDPOINT = "cqtest.quarklink-staging.io";
-int CQ_PORT = 6000;
-char *CQ_GATEWAY_CERT = // CA_CERT for cqtest
-    "-----BEGIN CERTIFICATE-----\n"\
-    "MIIBXjCCAQSgAwIBAgIIF1CZM8uRvrgwCgYIKoZIzj0EAwIwEjEQMA4GA1UEAxMH\n"\
-    "T0VNUm9vdDAgFw0yMzAzMjgxMzQ1MDhaGA8yMDUzMDMyMDEzNDUwOFowEjEQMA4G\n"\
-    "A1UEAxMHT0VNUm9vdDBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABA4x1u8ICV/T\n"\
-    "u2bQjY2O1HxqgM56WGENWqO+vZ1c3bk2ApNHTZ5r/MKwyP67DG5SbAFlCzt0m2Ab\n"\
-    "yW/bmjt8bkejQjBAMA4GA1UdDwEB/wQEAwIChDAPBgNVHRMBAf8EBTADAQH/MB0G\n"\
-    "A1UdDgQWBBQrDtBEyyVI9/bcRyuh3jjEs7JpijAKBggqhkjOPQQDAgNIADBFAiBi\n"\
-    "KYsy0UjyLLWOZSbMLYjfCYIUC645HrUNObLNmPxnRwIhAItZM1y4aRvEm0xjKSP9\n"\
-    "VOHBMBILDCC8OvfSjuP2phoU\n"\
-    "-----END CERTIFICATE-----\n";
-
-
 void app_main(void) {
-    printf("\nquarklink-getting_started-m5edukit-ecc608\n");
+    ESP_LOGI(TAG, "quarklink-getting_started-m5edukit-ecc608");
 
     /* quarklink init */
-    ESP_LOGI(TAG, "Initialising QuarkLink");
-    quarklink_return_t ql_ret = quarklink_init(&quarklink, CQ_ENDPOINT, 6000, CQ_GATEWAY_CERT);
+    ESP_LOGI(TAG, "Loading stored QuarkLink context");
+    // Need to initialise a local quarklink_context_t in order to retrieve the stored one. Doesn't matter what values it is given.
+    quarklink_return_t ql_ret = quarklink_init(&quarklink, "", 1, "");
     ql_ret = quarklink_loadStoredContext(&quarklink);
-    if (ql_ret != QUARKLINK_SUCCESS || ql_ret != QUARKLINK_CONTEXT_NO_ENROLMENT_INFO_STORED) {
-        ESP_LOGE(TAG, "Failed to load stored QuarkLink context (%d)", ql_ret);
+    if (ql_ret == QUARKLINK_CONTEXT_NO_ENROLMENT_INFO_STORED) {
+        // Should get here the first time after provisioning as the device hasn't enrolled yet
+        ESP_LOGI(TAG, "No QuarkLink enrolment info stored");
     }
-    else if (ql_ret == QUARKLINK_CONTEXT_NO_CREDENTIALS_STORED || ql_ret != QUARKLINK_CONTEXT_NOTHING_STORED) {
-        ESP_LOGE(TAG, "No QuarkLink credentials stored, using default (%s)", CQ_ENDPOINT);
-        strcpy(quarklink.endpoint, CQ_ENDPOINT);
-        strcpy(quarklink.rootCert, CQ_GATEWAY_CERT);   
+    else if (ql_ret != QUARKLINK_SUCCESS) {
+        // Any return other than QUARKLINK_SUCCESS or QUARKLINK_CONTEXT_NO_ENROLMENT_INFO_STORED is to be considered an error 
+        ESP_LOGE(TAG, "Failed to load stored QuarkLink context (%d)", ql_ret);
+        // should not happen, restart and retry
+        esp_restart();
+        // TODO provide some backup default values from Kconfig?
+        // if (ql_ret == QUARKLINK_CONTEXT_NO_CREDENTIALS_STORED || ql_ret == QUARKLINK_CONTEXT_NOTHING_STORED) {
+        //     ESP_LOGE(TAG, "No QuarkLink credentials stored, using default (%s)", QUARKLINK_DEFAULT_ENDPOINT);
+        //     strcpy(quarklink.endpoint, QUARKLINK_DEFAULT_ENDPOINT);
+        //     strcpy(quarklink.rootCert, QUARKLINK_DEFAULT_ROOTCA);
+        //     quarklink.port = 6000;
+        // }
     }
 
+    ESP_LOGI(TAG, "Successfully loaded QuarkLink details for: %s", quarklink.endpoint);
     ESP_LOGI(TAG, "Device ID: %s", quarklink.deviceID);
 
     wifi_init_sta();
