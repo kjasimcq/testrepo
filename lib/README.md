@@ -1,0 +1,1 @@
+Add the quarklink-client compiled libraries to this folder.
