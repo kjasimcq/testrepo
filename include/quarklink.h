@@ -2,6 +2,7 @@
  * \file quarklink.h
  * \brief Where the QuarkLink magic happens.
  * 
+ * Copyright (c) 2023 Crypto Quantique Ltd. All rights reserved.
  */
 #ifndef _QUARKLINK_H_
 #define _QUARKLINK_H_
