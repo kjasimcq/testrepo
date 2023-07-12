@@ -33,6 +33,9 @@ static const int MQTT_PUBLISH_INTERVAL = 5;
 /* MQTT config */
 #define MAX_TOPIC_LENGTH    (QUARKLINK_MAX_DEVICE_ID_LENGTH + 30)
 
+/*Variable to track if the MQTT Task is running*/
+static bool is_running = false;
+
 
 static void event_handler(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data) {
     if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_START) {
@@ -168,8 +171,6 @@ void getMqttTopic(quarklink_context_t *quarklink, char *topic) {
  * \return int 0 for success
  */
 int mqtt_init(quarklink_context_t *quarklink, esp_mqtt_client_handle_t *client) {
-    // Aux variable to keep track if mqtt task has already been started
-    static bool is_running = false;
     if (is_running) {
         return 0;
     }
@@ -305,6 +306,7 @@ void getting_started_task(void *pvParameter) {
                 /* Reset mqtt */
                 strcpy(mqtt_topic, "");
                 esp_mqtt_client_stop(mqtt_client);
+                is_running = false;
                 /* enroll */
                 ESP_LOGI(TAG, "Enrol to %s", quarklink.endpoint);
                 ql_ret = quarklink_enrol(&quarklink);
@@ -366,7 +368,7 @@ void getting_started_task(void *pvParameter) {
         }
 
         // If it's time to publish
-        if (round % MQTT_PUBLISH_INTERVAL == 0) {
+        if ((round % MQTT_PUBLISH_INTERVAL == 0) && (ql_status == QUARKLINK_STATUS_ENROLLED)) {
             if (strcmp(mqtt_topic, "") == 0) {
                 getMqttTopic(&quarklink, mqtt_topic);
             }
