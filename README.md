@@ -84,3 +84,6 @@ Until the fix has been added, there is need to manually update the two following
 if(((esp_tls_pki_t *)pki)->publiccert_pem_buf != NULL) {
     ret = mbedtls_x509_crt_parse(&tls->clientcert, (const unsigned char*)(((esp_tls_pki_t *) pki)->publiccert_pem_buf), ((esp_tls_pki_t *)pki)->publiccert_pem_bytes); 
 ```
+
+## Further Notes
+**Custom Partition Table:** users might be interested in using their own partition table with QuarkLink. Currently, support for this feature is only for paid tiers, however users are welcome to request a custom partition table via the GitHub issues on this project.
