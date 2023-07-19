@@ -23,8 +23,8 @@ There are a few requirements needed in order to get started with this project:
     This project is meant for the esp-idf framework and it needs at least v5.1 due to some updates that are necessary to properly use the secure element.  
     Instructions on how to setup the esp-idf environment can be found [here](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/get-started/index.html).
 - **quarklink-client libraries**
-    The quarklink-client library comes in the form of compiled binaries and can be found [here](https://github.com/cryptoquantique/quarklink-binaries/tree/main/quarklink-client).  
-    The files needed for this project are labelled with *m5edukit-ecc608* and need to placed inside the `lib` folder in this project.
+    The quarklink-client library comes in the form of compiled binaries and can be found in the [quarklink-binaries repository](https://github.com/cryptoquantique/quarklink-binaries/tree/main/quarklink-client).  
+    The files needed for this project are labelled with *m5edukit-ecc608* and need to copied inside the `lib` folder in this project.
 
 ## Setup
 
