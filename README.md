@@ -1,6 +1,6 @@
 # QuarkLink Getting Started
 
-Similarly to [quarklink-getting-started](https://github.com/cryptoquantique/quarklink-getting-started), this project is a simple demonstration on how to get started with QuarkLink to secure an esp32 device.
+Similarly to [quarklink-getting-started-esp32-platformio](https://github.com/cryptoquantique/quarklink-getting-started-esp32-platformio), this project is a simple demonstration on how to get started with QuarkLink to secure an esp32 device.
 
 In particular, this project uses the [esp-idf framework](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/get-started/) and is designed specifically for the [M5Stack EduKit](https://shop.m5stack.com/products/m5stack-core2-esp32-iot-development-kit-for-aws-iot-edukit) unit, that comes with an on-board Secure Element (Microchip ATECC-608).
 
@@ -11,7 +11,7 @@ The result is an M5Stack (ESP32-Eco3) that is secured by using:
 
 and which can only be updated Over-The-Air with firmware signed by a key from the Quarklink Hardware Security Module (HSM).
 
-See the [Quarklink Getting Started Guide](https://cryptoquantique.github.io/QuarklinkGettingStartedGuide.pdf) for more detailed information.
+See the [Quarklink Getting Started Guide](https://github.com/cryptoquantique/cryptoquantique.github.io/blob/main/QuarkLink%20Ignite%20Getting%20Started%20Guide%20V1.00.pdf) for more detailed information.
 
 ## Requirements
 
