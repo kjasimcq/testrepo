@@ -107,10 +107,12 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
     ESP_LOGD(TAG, "Event dispatched from event loop base=%s, event_id=%" PRIi32, base, event_id);
     esp_mqtt_event_handle_t event = event_data;
     esp_mqtt_client_handle_t client = event->client;
+    int msg_id;
     switch ((esp_mqtt_event_id_t)event_id) {
     case MQTT_EVENT_CONNECTED:
         ESP_LOGI(TAG, "MQTT_EVENT_CONNECTED");
-        // TODO Subscribe to something as an example
+        msg_id = esp_mqtt_client_subscribe(client, "topic/#", 0);
+        ESP_LOGI(TAG, "sent subscribe successful, msg_id=%d", msg_id);
         break;
     case MQTT_EVENT_DISCONNECTED:
         ESP_LOGI(TAG, "MQTT_EVENT_DISCONNECTED");
@@ -126,8 +128,8 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
         break;
     case MQTT_EVENT_DATA:
         ESP_LOGI(TAG, "MQTT_EVENT_DATA");
-        printf("TOPIC=%.*s\r\n", event->topic_len, event->topic);
-        printf("DATA=%.*s\r\n", event->data_len, event->data);
+        ESP_LOGI(TAG, "TOPIC=%.*s", event->topic_len, event->topic);
+        ESP_LOGI(TAG, "DATA=%.*s", event->data_len, event->data);
         break;
     case MQTT_EVENT_BEFORE_CONNECT:
         ESP_LOGI(TAG, "MQTT_EVENT_BEFORE_CONNECT");
@@ -148,20 +150,6 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
     default:
         ESP_LOGI(TAG, "Other event id:%d", event->event_id);
         break;
-    }
-}
-
-/* Build the topic accordingly to the IoT Hub used */
-void getMqttTopic(quarklink_context_t *quarklink, char *topic) {
-    // If Broker is AWS
-    if (strstr(quarklink->iotHubEndpoint, "amazon") != 0) {
-        ESP_LOGI(TAG, "Broker is AWS");
-        sprintf(topic, "aws/topic/%s", quarklink->deviceID);
-    }
-    // If Broker is QuarkLink MQTT
-    else {
-        ESP_LOGI(TAG, "Broker is QuarkLink MQTT");
-        sprintf(topic, "local/topic/%s", quarklink->deviceID);
     }
 }
 
@@ -376,7 +364,7 @@ void getting_started_task(void *pvParameter) {
         // If it's time to publish
         if ((round % MQTT_PUBLISH_INTERVAL == 0) && (ql_status == QUARKLINK_STATUS_ENROLLED)) {
             if (strcmp(mqtt_topic, "") == 0) {
-                getMqttTopic(&quarklink, mqtt_topic);
+                sprintf(mqtt_topic, "topic/%s", quarklink.deviceID);
             }
             // len = 0 and data not NULL is valid, length is determined by strlen
             sprintf(data, "%d", count++);
