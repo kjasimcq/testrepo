@@ -9,9 +9,9 @@ The result is an M5Stack (ESP32-Eco3) that is secured by using:
 - Flash Encryption
 - Hardware Root-of-Trust
 
-and which can only be updated Over-The-Air with firmware signed by a key from the Quarklink Hardware Security Module (HSM).
+and which can only be updated Over-The-Air with firmware signed by a key from the QuarkLink Hardware Security Module (HSM).
 
-See the [Quarklink Getting Started Guide](https://github.com/cryptoquantique/cryptoquantique.github.io/blob/main/QuarkLink%20Ignite%20Getting%20Started%20Guide%20V1.00.pdf) for more detailed information.
+See the [QuarkLink Getting Started Guide](https://github.com/cryptoquantique/cryptoquantique.github.io/blob/main/QuarkLink%20Ignite%20Getting%20Started%20Guide%20V1.00.pdf) for more detailed information.
 
 ## Requirements
 
@@ -34,12 +34,17 @@ The esp-cryptoauthlib component included in this project, is a port of Microchip
 Instructions on how to provision the ATECC-608 are included in the `esp_cryptoauth_utility` [README.md](./components/esp-cryptoauthlib/esp_cryptoauth_utility/README.md).  
 
 ### Project configuration
+>**Note:** It is assumed that the user has already familiarised with the difference between *virtual-efuses* and *release* during the QuarkLink provisioning process.  
+More information on what virtual efuses are can be found as part of [espressif programming guide](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-reference/system/efuse.html#virtual-efuses).
+
 Use ESP-IDF's `idf.py` command to configure the project:
 - Run `idf.py set-target esp32` to select the target device (note: M5Stack edukit mounts an esp32 rev3)  
     This will create the file *sdkconfig*.
-- There is no need for further configuration, as any value that differs from default is specified in the *sdkconfig.defaults* file.
-
-It is important to leave the configuration as it is, especially the parts concerning the Security Features, Partition Table and Bootloader, as changing these will brick the device.
+- The created configuration files will already contain the changes imposed by *sdkconfig.defaults*
+- The default configuration uses virtual-efuses, if this is not the desired configuration update it following the instructions below:  
+    There are two ways a user can switch between *virtual-efuses* and *release* configurations:
+    1. Copy the content of the relevant sdkconfig file (i.e. [*sdkconfig-release*](./sdkconfig-release)) and paste it into the newly generated *sdkconfig* to replace its content.
+    2. Update [*sdkconfig.defaults*](./sdkconfig.defaults) by commenting out the vefuse section and un-commenting the release section, delete the generated *sdkconfig* to allow the generation of a new, updated one.
 
 ### Select quarklink-client library
 To change the quarklink-client compiled library to use, simply modify the [CMakeLists.txt](./main/CMakeLists.txt) in the main folder and update with the path and name of the file needed.
