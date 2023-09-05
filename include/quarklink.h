@@ -28,7 +28,7 @@ extern const char QUARKLINK_VERSION[];
 #define QUARKLINK_MAX_DEVICE_ID_LENGTH      (65)
 #define QUARKLINK_MAX_ENDPOINT_LENGTH       (128)
 #define QUARKLINK_MAX_KEY_LENGTH            (256)
-#define QUARKLINK_MAX_CSR_LENGTH            (512)
+#define QUARKLINK_MAX_CSR_LENGTH            (2048)
 #define QUARKLINK_MAX_TOKEN_LENGTH          (650)
 #define QUARKLINK_MAX_SHORT_CERT_LENGTH     (1500)
 #define QUARKLINK_MAX_LONG_CERT_LENGTH      (2048)
@@ -402,6 +402,96 @@ quarklink_return_t quarklink_deleteEnrolmentContext(const quarklink_context_t *q
  * \retval  QUARKLINK_ERROR
  */
 quarklink_return_t quarklink_deleteContext(const quarklink_context_t *quarklink);
+
+/**
+ * \brief Check if the device is currently enrolled.
+ * 
+ * This function needs to be called after `quarklink_status()`, in order to 
+ * have an up-to-date device status.
+ * \see quarklink_status
+ * 
+ * \note `quarklink_isDeviceEnrolled()`, `quarklink_isDeviceNotEnrolled()`, 
+ * `quarklink_isDeviceRevoked()` and `quarklink_isDevicePendingRevoke()` are mutually
+ * exclusive, meaning only one of these can be true at the same time.
+ * 
+ * \return 1 if true, 0 if false
+ */
+int quarklink_isDeviceEnrolled();
+
+/**
+ * \brief Check if the device is currently not enrolled.
+ * 
+ * This function needs to be called after `quarklink_status()`, in order to 
+ * have an up-to-date device status.
+ * \see quarklink_status
+ * 
+ * \note `quarklink_isDeviceEnrolled()`, `quarklink_isDeviceNotEnrolled()`, 
+ * `quarklink_isDeviceRevoked()` and `quarklink_isDevicePendingRevoke()` are mutually
+ * exclusive, meaning only one of these can be true at the same time.
+ * 
+ * \return 1 if true, 0 if false
+ */
+int quarklink_isDeviceNotEnrolled();
+
+/**
+ * \brief Check if the device is currently revoked.
+ * 
+ * This function needs to be called after `quarklink_status()`, in order to 
+ * have an up-to-date device status.
+ * \see quarklink_status
+ * 
+ * \note `quarklink_isDeviceEnrolled()`, `quarklink_isDeviceNotEnrolled()`, 
+ * `quarklink_isDeviceRevoked()` and `quarklink_isDevicePendingRevoke()` are mutually
+ * exclusive, meaning only one of these can be true at the same time.
+ * 
+ * \return 1 if true, 0 if false
+ */
+int quarklink_isDeviceRevoked();
+
+/**
+ * \brief Check if the device is currently pending on a revoke.
+ * 
+ * This function needs to be called after `quarklink_status()`, in order to 
+ * have an up-to-date device status.
+ * \see quarklink_status
+ * 
+ * \note `quarklink_isDeviceEnrolled()`, `quarklink_isDeviceNotEnrolled()`, 
+ * `quarklink_isDeviceRevoked()` and `quarklink_isDevicePendingRevoke()` are mutually
+ * exclusive, meaning only one of these can be true at the same time.
+ * 
+ * \return 1 if true, 0 if false
+ */
+int quarklink_isDevicePendingRevoke();
+
+/**
+ * \brief Check if the device certificate is expired.
+ * 
+ * This function needs to be called after `quarklink_status()`, in order to 
+ * have an up-to-date device status.
+ * \see quarklink_status
+ * 
+ * \note `quarklink_isDeviceEnrolled()`, `quarklink_isDeviceNotEnrolled()`, 
+ * `quarklink_isDeviceRevoked()` and `quarklink_isDevicePendingRevoke()` are mutually
+ * exclusive, meaning only one of these can be true at the same time.
+ * 
+ * \return 1 if true, 0 if false
+ */
+int quarklink_isDeviceCertificateExpired();
+
+/**
+ * \brief Check if there is a firmware update available for the device.
+ * 
+ * This function needs to be called after `quarklink_status()`, in order to 
+ * have an up-to-date device status.
+ * \see quarklink_status
+ * 
+ * \note `quarklink_isDeviceEnrolled()`, `quarklink_isDeviceNotEnrolled()`, 
+ * `quarklink_isDeviceRevoked()` and `quarklink_isDevicePendingRevoke()` are mutually
+ * exclusive, meaning only one of these can be true at the same time.
+ * 
+ * \return 1 if true, 0 if false
+ */
+int quarklink_isDeviceFwUpdateAvailable();
 
 #ifdef __cplusplus
 } /* end of extern "C" */
