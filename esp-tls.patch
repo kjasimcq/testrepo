@@ -1,0 +1,25 @@
+diff --git a/components/esp-tls/esp_tls_mbedtls.c b/components/esp-tls/esp_tls_mbedtls.c
+index 79921f0c36..667eec4c3c 100644
+--- a/components/esp-tls/esp_tls_mbedtls.c
++++ b/components/esp-tls/esp_tls_mbedtls.c
+@@ -189,6 +189,7 @@ int esp_mbedtls_handshake(esp_tls_t *tls, const esp_tls_cfg_t *cfg)
+         }
+     }
+ #endif
++
+     ret = mbedtls_ssl_handshake(&tls->ssl);
+     if (ret == 0) {
+         tls->conn_state = ESP_TLS_DONE;
+@@ -946,9 +947,9 @@ static esp_err_t esp_set_atecc608a_pki_context(esp_tls_t *tls, const void *pki)
+         return ESP_ERR_ESP_TLS_SE_FAILED;
+     }
+     mbedtls_x509_crt_init(&tls->clientcert);
+-
+-    if(cfg->clientcert_buf != NULL) {
+-        ret = mbedtls_x509_crt_parse(&tls->clientcert, (const unsigned char*)((esp_tls_pki_t *)pki->publiccert_pem_buf), (esp_tls_pki_t *)pki->publiccert_pem_bytes);
++
++    if (((esp_tls_pki_t *) pki)->publiccert_pem_buf != NULL) {
++        ret = mbedtls_x509_crt_parse(&tls->clientcert, (const unsigned char*) (((esp_tls_pki_t *) pki)->publiccert_pem_buf), ((esp_tls_pki_t *) pki)->publiccert_pem_bytes);
+         if (ret < 0) {
+             ESP_LOGE(TAG, "mbedtls_x509_crt_parse of client cert returned -0x%04X", -ret);
+             mbedtls_print_error_msg(ret);

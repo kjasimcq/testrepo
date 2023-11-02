@@ -50,12 +50,12 @@ Use ESP-IDF's `idf.py` command to configure the project:
 To change the quarklink-client compiled library to use, simply modify the [CMakeLists.txt](./main/CMakeLists.txt) in the main folder and update with the path and name of the file needed.
 E.g.
 ```c
-add_prebuilt_library(quarklink_client "../lib/libquarklink-client-esp32-m5edukit-ecc608-v1.2.2.a"
+add_prebuilt_library(quarklink_client "../lib/libquarklink-client-esp32-m5edukit-ecc608-v1.4.0.a"
                     PRIV_REQUIRES nvs_flash esp_http_client esp_https_ota app_update mbedtls esp-cryptoauthlib)
 ```
 Becomes
 ```c
-add_prebuilt_library(quarklink_client "../lib/libquarklink-client-esp32-m5edukit-ecc608-v1.2.2-debug.a"
+add_prebuilt_library(quarklink_client "../lib/libquarklink-client-esp32-m5edukit-ecc608-v1.4.0-debug.a"
                     PRIV_REQUIRES nvs_flash esp_http_client esp_https_ota app_update mbedtls esp-cryptoauthlib)
 ```
 
@@ -83,13 +83,25 @@ In order to update your device, you need to upload the generated binary `build/q
 
 ## Troubleshooting
 At the time of writing, the latest esp-idf version is 5.1. There is a minor bug within the *esp_tls_mbedtls* component that prevents the Secure Element from working as intended.  
-Until the fix has been merged in, there is need to manually update the two following lines of code, in the file *${IDF_PATH}\components\esp-tls\esp_tls_mbedtls.c*:
+Until the fix has been merged in, there is need to manually update the code by applying the provided patch (*esp-tls.patch*).
+
+To apply the patch run the following command from terminal:
+```sh
+patch -p1 -i <PATH/TO/PROJECT>/esp-tls.patch -d <IDF_PATH>
+```
+
+**On Windows**: the above command needs a recent version of `patch` (2.7.6) that comes as part of Git. If not in PATH, run the above from the Git installation folder, generally:
+```sh
+"C:\Program Files\Git\usr\bin\patch.exe" -p1 -i <PATH/TO/PROJECT>/esp-tls.patch -d <IDF_PATH>
+```
+
+In particular, what changes are the two following lines of code, in the file *${IDF_PATH}\components\esp-tls\esp_tls_mbedtls.c*:
 ```c
 // Lines 976, 977
 if(cfg->clientcert_buf != NULL) {
     ret = mbedtls_x509_crt_parse(&tls->clientcert, (const unsigned char*)((esp_tls_pki_t *)pki->publiccert_pem_buf), (esp_tls_pki_t *)pki->publiccert_pem_bytes);
 ```
-Need to be replaced with:
+Is replaced with:
 ```c
 if (((esp_tls_pki_t *) pki)->publiccert_pem_buf != NULL) {
     ret = mbedtls_x509_crt_parse(&tls->clientcert, (const unsigned char*) (((esp_tls_pki_t *) pki)->publiccert_pem_buf), ((esp_tls_pki_t *) pki)->publiccert_pem_bytes); 
