@@ -91,7 +91,7 @@ typedef struct quarklink_context_t {
     /** Unique Device ID, initialised by \ref quarklink_init() */
     char deviceID[QUARKLINK_MAX_DEVICE_ID_LENGTH];
     /** Device certificate, obtained when enrolling with QuarkLink via \ref quarklink_enrol() */
-    char deviceCert[QUARKLINK_MAX_SHORT_CERT_LENGTH];
+    char deviceCert[QUARKLINK_MAX_LONG_CERT_LENGTH];
 
     /** DBS token, obtained when enrolling with QuarkLink Database Direct */
     char token[QUARKLINK_MAX_TOKEN_LENGTH];

@@ -1,0 +1,31 @@
+diff --git a/components/esp_http_client/esp_http_client.c b/components/esp_http_client/esp_http_client.c
+index 9ae029a623..03fd2e49c9 100644
+--- a/components/esp_http_client/esp_http_client.c
++++ b/components/esp_http_client/esp_http_client.c
+@@ -722,6 +722,12 @@ esp_http_client_handle_t esp_http_client_init(const esp_http_client_config_t *co
+     }
+ #endif
+ 
++#if CONFIG_ESP_TLS_USE_DS_PERIPHERAL
++    if (config->ds_data != NULL) {
++        esp_transport_ssl_set_ds_data(ssl, config->ds_data);
++    }
++#endif
++
+     if (config->client_key_pem) {
+         if (!config->client_key_len) {
+             esp_transport_ssl_set_client_key_data(ssl, config->client_key_pem, strlen(config->client_key_pem));
+diff --git a/components/esp_http_client/include/esp_http_client.h b/components/esp_http_client/include/esp_http_client.h
+index e1dbd5c8f1..74ccd24ac6 100644
+--- a/components/esp_http_client/include/esp_http_client.h
++++ b/components/esp_http_client/include/esp_http_client.h
+@@ -160,6 +160,9 @@ typedef struct {
+ #if CONFIG_ESP_TLS_USE_SECURE_ELEMENT
+     bool use_secure_element;                /*!< Enable this option to use secure element */
+ #endif
++#if CONFIG_ESP_TLS_USE_DS_PERIPHERAL
++    void *ds_data;                          /*!< Pointer for digital signature peripheral context, see ESP-TLS Documentation for more details */
++#endif
+ } esp_http_client_config_t;
+ 
+ /**
