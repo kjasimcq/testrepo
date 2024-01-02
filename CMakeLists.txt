@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 3.16.0)
 set(PROJECT_VER "0.1")
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
-project(ql-getting-started-esp32-pio)
+project(ql-getting-started-m5-ecc608)
+
