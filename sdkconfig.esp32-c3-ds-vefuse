@@ -405,8 +405,8 @@ CONFIG_PARTITION_TABLE_CUSTOM=y
 # CONFIG_PARTITION_TABLE_SINGLE_APP_ENCRYPTED_NVS is not set
 # CONFIG_PARTITION_TABLE_SINGLE_APP_LARGE_ENC_NVS is not set
 # CONFIG_PARTITION_TABLE_TWO_OTA_ENCRYPTED_NVS is not set
-CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partition-tables/partition-table-esp32-c3-sb-fe-vefuse.csv"
-CONFIG_PARTITION_TABLE_FILENAME="partition-tables/partition-table-esp32-c3-sb-fe-vefuse.csv"
+CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="config-files/partition-tables/partition-table-esp32-c3-sb-fe-vefuse.csv"
+CONFIG_PARTITION_TABLE_FILENAME="config-files/partition-tables/partition-table-esp32-c3-sb-fe-vefuse.csv"
 CONFIG_PARTITION_TABLE_OFFSET=0xd000
 CONFIG_PARTITION_TABLE_MD5=y
 # end of Partition Table
