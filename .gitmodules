@@ -1,0 +1,4 @@
+[submodule "config-files"]
+	path = config-files
+	# url = ssh://git@dev-gitlab.cryptoquantique.com:30022/firmware-development/config-files.git
+	url = ../../config-files ; use relative URL to use submodules in CI/CD (https://docs.gitlab.com/ee/ci/git_submodules.html)
