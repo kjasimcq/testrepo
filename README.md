@@ -1,111 +1,126 @@
-# QuarkLink Getting Started
+# QuarkLink Database Direct
 
-Similarly to [quarklink-getting-started-esp32-platformio](https://github.com/cryptoquantique/quarklink-getting-started-esp32-platformio), this project is a simple demonstration on how to get started with QuarkLink to secure an esp32 device.
+This example project provides instructions on how to use QuarkLink to make a secure IoT device using an ESP32 and specificly connect to a Database Direct([esp32-c3](https://docs.espressif.com/projects/esp-idf/en/latest/esp32c3/hw-reference/esp32c3/user-guide-devkitm-1.html)).
 
-In particular, this project uses the [esp-idf framework](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/get-started/) and is designed specifically for the [M5Stack EduKit](https://shop.m5stack.com/products/m5stack-core2-esp32-iot-development-kit-for-aws-iot-edukit) unit, that comes with an on-board Secure Element (Microchip ATECC-608).
+The result is an ESP32 that is using secure boot, flash encryption, has a Root-of-Trust, and which can only be updated Over-The-Air with firmware signed by a key from the QuarkLink Hardware Security Module (HSM).
 
-The result is an M5Stack (ESP32-Eco3) that is secured by using:
-- Secure Boot v2
-- Flash Encryption
-- Hardware Root-of-Trust
+See the [QuarkLink User Guide](https://docs.quarklink.io/docs/database-direct) for more detailed information on how to create a Database Direct connection.
 
-and which can only be updated Over-The-Air with firmware signed by a key from the QuarkLink Hardware Security Module (HSM).
-
-See the [QuarkLink Getting Started Guide](https://docs.quarklink.io/docs/getting-started-with-quarklink-ignite) for more detailed information.
+In case you want to use MongoDB as Database Direct solution, check out the [Mongo Atlas QuarkLink Setup Procedure](https://docs.quarklink.io/docs/mongo-atlas-quarklink-setup-procedure) for more detailed information on how to setup MongoDB Atlas
 
 ## Requirements
 
 There are a few requirements needed in order to get started with this project:
 
-- **M5Stack EduKit**
-    This project is only meant for this specific device.
-- **esp-idf v5.1**
-    This project is meant for the esp-idf framework and it needs at least v5.1 due to some updates that are necessary to properly use the secure element.  
-    Instructions on how to setup the esp-idf environment can be found [here](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/get-started/index.html).
+- **PlatformIO**
+    The project uses the PlatformIO build environment. If you don't already have this follow the installation instructions [here](https://platformio.org/install).  
+    You can verify PlatformIO is installed with ```pio --version``` command:
+    ```sh
+    >pio --version
+    PlatformIO Core, version 6.1.7
+    ``` 
 - **quarklink-client libraries**
     The quarklink-client library comes in the form of compiled binaries and can be found in the [quarklink-binaries repository](https://github.com/cryptoquantique/quarklink-binaries/tree/main/quarklink-client).  
-    The files needed for this project are labelled with *m5edukit-ecc608* and need to copied inside the `lib` folder in this project.
+    Copy the required files into the `lib` folder of this project.  
+    For example, if building for `esp32-c3`: copy the file `libquarklink-client-esp32-c3-ds-v1.4.0.a` to the local clone of this repository, inside `lib`.
 
-## Setup
+## Pre-built binaries
 
-### Provision the ATECC-608 Secure Element
-When configuring a new device, there is need to provision the Secure Element in order to use it.  
-The esp-cryptoauthlib component included in this project, is a port of Microchip's [cryptoauthlib](https://github.com/MicrochipTech/cryptoauthlib) for ESP-IDF and includes all the utilities needed to configure, provision and use the Secure Element module. The component can also be found [here](https://github.com/espressif/esp-cryptoauthlib).  
-Instructions on how to provision the ATECC-608 are included in the `esp_cryptoauth_utility` [README.md](./components/esp-cryptoauthlib/esp_cryptoauth_utility/README.md).  
+There are pre-built binaries of this project available in the [quarklink-binaries repository](https://github.com/cryptoquantique/quarklink-binaries/tree/main/quarklink-examples/database-direct).  
+These binaries can be programmed into the ESP32 device using the QuarkLink provisioning facility. No need for third party programming tools.
 
-### Project configuration
+## Building this project
+
+To build the project use the ```pio run``` command:
+```sh
+> pio run
+Processing esp32-c3-ds-vefuse (board: esp32-c3-devkitm-1; platform: espressif32 @6.4.0; framework: espidf)
+------------------------------------------------------------------------------------------------------------------------------Verbose mode can be enabled via `-v, --verbose` option
+...
+Patch file: ota_ds_peripheral.patch
+Patch has already been applied
+CONFIGURATION: https://docs.platformio.org/page/boards/espressif32/esp32-c3-devkitm-1.html
+PLATFORM: Espressif 32 (6.4.0) > Espressif ESP32-C3-DevKitM-1
+HARDWARE: ESP32C3 160MHz, 320KB RAM, 4MB Flash
+...
+Building in release mode
+Retrieving maximum program size .pio\build\esp32-c3-ds-vefuse\firmware.elf
+Checking size .pio\build\esp32-c3-ds-vefuse\firmware.elf
+Advanced Memory Usage is available via "PlatformIO Home > Project Inspect"
+RAM:   [==        ]  16.5% (used 54072 bytes from 327680 bytes)
+Flash: [========= ]  92.3% (used 967932 bytes from 1048576 bytes)
+================================================ [SUCCESS] Took 7.56 seconds ================================================
+
+Environment         Status    Duration
+------------------  --------  ------------
+esp32-c3-ds-vefuse  SUCCESS   00:00:07.565
+================================================ 1 succeeded in 00:00:07.565 ================================================ 
+
+```
+
+The build will create a firmware binary file within the .pio directory:
+```sh
+>dir /b .pio\build\esp32-c3-ds-vefuse\firmware.bin
+firmware.bin
+```
+
+The ```firmware.bin``` file is what you upload to QuarkLink. Click on the "Firmwares" option of the QuarkLink main menu to access the uploading function.  
+Once uploaded to QuarkLink configure your Batch with the new firmware image and it will be automatically downloaded to the ESP32.  
+See the [QuarkLink Getting Started Guide](https://docs.quarklink.io/docs/getting-started-with-quarklink-ignite#getting-started) for more details.
+
+## Configurations
+There are currently two configurations available for the firmware:
+- virtual-efuses
+- release
+
+When building, make sure to choose the same configuration that the device was provisioned with via QuarkLink.
+
+The default environment is `esp32-c3-ds-vefuses`, as can be seen from the [example above](#building-this-project). To build the firmware with the `esp32-c3-ds-release` configuration, run the command 
+```sh
+>pio run -e esp32-c3-release
+```
+
 >**Note:** It is assumed that the user has already familiarised with the difference between *virtual-efuses* and *release* during the QuarkLink provisioning process.  
 More information on what virtual efuses are can be found as part of [espressif programming guide](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-reference/system/efuse.html#virtual-efuses).
 
-Use ESP-IDF's `idf.py` command to configure the project:
-- Run `idf.py set-target esp32` to select the target device (note: M5Stack edukit mounts an esp32 rev3)  
-    This will create the file *sdkconfig*.
-- The created configuration files will already contain the changes imposed by *sdkconfig.defaults*
-- The default configuration uses virtual-efuses, if this is not the desired configuration update it following the instructions below:  
-    There are two ways a user can switch between *virtual-efuses* and *release* configurations:
-    1. Copy the content of the relevant sdkconfig file (i.e. [*sdkconfig-release*](./sdkconfig-release)) and paste it into the newly generated *sdkconfig* to replace its content.
-    2. Update [*sdkconfig.defaults*](./sdkconfig.defaults) by commenting out the vefuse section and un-commenting the release section, delete the generated *sdkconfig* to allow the generation of a new, updated one.
-
-### Select quarklink-client library
-To change the quarklink-client compiled library to use, simply modify the [CMakeLists.txt](./main/CMakeLists.txt) in the main folder and update with the path and name of the file needed.
-E.g.
-```c
-add_prebuilt_library(quarklink_client "../lib/libquarklink-client-esp32-m5edukit-ecc608-v1.4.0.a"
-                    PRIV_REQUIRES nvs_flash esp_http_client esp_https_ota app_update mbedtls esp-cryptoauthlib)
+### Debug
+All the environments can be updated to use the debug version of the QuarkLink client library if needed. In order to do this, open the file [platformio.ini](platformio.ini) and update the desired configuration `build_flags` option.  
+Example:
+```ini
+[env:esp32-c3-ds-release]
+board = esp32-c3-devkitm-1
+build_flags = -Llib -lquarklink-client-esp32-c3-ds-v1.4.0 -Iinclude
 ```
-Becomes
-```c
-add_prebuilt_library(quarklink_client "../lib/libquarklink-client-esp32-m5edukit-ecc608-v1.4.0-debug.a"
-                    PRIV_REQUIRES nvs_flash esp_http_client esp_https_ota app_update mbedtls esp-cryptoauthlib)
+Becomes:
+```ini
+[env:esp32-c3-ds-release]
+board = esp32-c3-devkitm-1
+build_flags = -Llib -lquarklink-client-esp32-c3-ds-v1.3.0-debug -Iinclude
 ```
 
+## Building project version with RGB LED
+This is currently supported only for the esp32-c3 board.
 
-## Build
-Run `idf.py build` to build the project. 
-This command will generate the firmware that needs to be uploaded to QuarkLink for the OTA update.
-```
-idf.py build
+To enable the use of the RGB LED, you need to configure its colour before building the project with ```pio run```. This is done by setting the following environment variable:
+```PLATFORMIO_BUILD_FLAGS="-DLED_COLOUR=<COLOUR>"```
 
-. . .
-
-Creating esp32 image...
-Merged 25 ELF sections
-Successfully created esp32 image.
-Generated <path/to/>quarklink-getting-started-m5edukit-ecc608/build/quarklink-getting-started-m5edukit-ecc608.bin
-
-. . .
-
-```
-
-You might notice that at the end the utility prompts you to sign the firmware and suggests what command to run to flash the device. This is not possible, since the device has already been provisioned via QuarkLink and can only be updated with firmware that is signed with the same key, securely stored in the QuarkLink HSM.
-
-In order to update your device, you need to upload the generated binary `build/quarklink-getting-started-m5edukit-ecc608.bin` to your QuarkLink instance, where it will be signed and provided to the running device as an over-the-air update.
-
-## Troubleshooting
-At the time of writing, the latest esp-idf version is 5.1. There is a minor bug within the *esp_tls_mbedtls* component that prevents the Secure Element from working as intended.  
-Until the fix has been merged in, there is need to manually update the code by applying the provided patch (*esp-tls.patch*).
-
-To apply the patch run the following command from terminal:
+On Windows systems this is achieved as follows (e.g. green LED):
 ```sh
-patch -p1 -i <PATH/TO/PROJECT>/esp-tls.patch -d <IDF_PATH>
+>$Env:PLATFORMIO_BUILD_FLAGS="-DLED_COLOUR=GREEN"
 ```
-
-**On Windows**: the above command needs a recent version of `patch` (2.7.6) that comes as part of Git. If not in PATH, run the above from the Git installation folder, generally:
+Whereas on Unix systems the analogous command is:
 ```sh
-"C:\Program Files\Git\usr\bin\patch.exe" -p1 -i <PATH/TO/PROJECT>/esp-tls.patch -d <IDF_PATH>
+export PLATFORMIO_BUILD_FLAGS="-DLED_COLOUR=GREEN"
+``` 
+
+>**Note:** Currently supported colours are: GREEN and BLUE
+
+To reset the LED configuration and disable the LED simply reset the variable:
+```sh
+>$Env:PLATFORMIO_BUILD_FLAGS=""
 ```
 
-In particular, what changes are the two following lines of code, in the file *${IDF_PATH}\components\esp-tls\esp_tls_mbedtls.c*:
-```c
-// Lines 976, 977
-if(cfg->clientcert_buf != NULL) {
-    ret = mbedtls_x509_crt_parse(&tls->clientcert, (const unsigned char*)((esp_tls_pki_t *)pki->publiccert_pem_buf), (esp_tls_pki_t *)pki->publiccert_pem_bytes);
-```
-Is replaced with:
-```c
-if (((esp_tls_pki_t *) pki)->publiccert_pem_buf != NULL) {
-    ret = mbedtls_x509_crt_parse(&tls->clientcert, (const unsigned char*) (((esp_tls_pki_t *) pki)->publiccert_pem_buf), ((esp_tls_pki_t *) pki)->publiccert_pem_bytes); 
-```
+The device will need to be un-plugged from power for the change to take effect.
 
 ## Further Notes
 **Custom Partition Table:** users might be interested in using their own partition table with QuarkLink. Currently, support for this feature is only for paid tiers, however users are welcome to request a custom partition table via the GitHub issues on this project.
